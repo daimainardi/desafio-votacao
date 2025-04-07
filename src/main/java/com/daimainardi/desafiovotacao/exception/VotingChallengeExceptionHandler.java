@@ -77,6 +77,7 @@ public class VotingChallengeExceptionHandler {
                 .message("Invalid form")
                 .error(e.getClass().getName())
                 .status(HttpStatus.BAD_REQUEST)
+                .fieldErrors(errors)
                 .build();
     }
 
