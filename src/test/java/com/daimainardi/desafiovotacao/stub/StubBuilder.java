@@ -2,10 +2,12 @@ package com.daimainardi.desafiovotacao.stub;
 
 import com.daimainardi.desafiovotacao.entity.AgendaEntity;
 import com.daimainardi.desafiovotacao.entity.SessionEntity;
+import com.daimainardi.desafiovotacao.entity.VoteEntity;
 import com.daimainardi.desafiovotacao.request.AgendaRequestDTO;
 import com.daimainardi.desafiovotacao.request.SessionRequestDTO;
 import com.daimainardi.desafiovotacao.request.VoteRequestDTO;
 import com.daimainardi.desafiovotacao.response.AgendaResponseDTO;
+import com.daimainardi.desafiovotacao.response.VoteResultDTO;
 
 import java.time.LocalDateTime;
 
@@ -40,4 +42,11 @@ public class StubBuilder {
         return new VoteRequestDTO("84488737005", "78910", "sim");
     }
 
+
+    public static VoteEntity voteEntityYes(){
+        return new VoteEntity("1234", "84488737005", "78910", "SIM");
+    }
+    public static VoteEntity voteEntityNo(){
+        return new VoteEntity("123", "00762345098", "78910", "NAO");
+    }
 }

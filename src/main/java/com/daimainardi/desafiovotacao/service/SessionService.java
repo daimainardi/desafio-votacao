@@ -31,10 +31,7 @@ public class SessionService {
     private final AgendaService agendaService;
 
     public SessionResponseDTO createSession(SessionRequestDTO sessionRequestDTO) {
-        var session = sessionRequestDTO;
-        if (session.durationMinutes() == null || session.durationMinutes() == 0) {
-            session = sessionRequestDTO.toBuilder().durationMinutes(1).build();
-        }
+        SessionRequestDTO session = validateSessionDurationTime(sessionRequestDTO);
         SessionEntity sessionEntity = sessionRepository.save(SessionMapper.mapRequestToEntity(session));
         return new SessionResponseDTO(sessionEntity.id(), getTitleByAgendaId(sessionEntity.agendaId()), session.durationMinutes());
     }
@@ -83,6 +80,12 @@ public class SessionService {
         return new SessionResponseDTO(sessionEntity.id(), getTitleByAgendaId(sessionEntity.agendaId()), (int) durationMinutes);
     }
 
+    private SessionRequestDTO validateSessionDurationTime(SessionRequestDTO session){
+        if (session.durationMinutes() == null || session.durationMinutes() == 0) {
+            session = session.toBuilder().durationMinutes(1).build();
+        }
+        return session;
+    }
 }
 
 

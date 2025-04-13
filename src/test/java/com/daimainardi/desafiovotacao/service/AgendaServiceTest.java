@@ -57,6 +57,8 @@ class AgendaServiceTest {
         AgendaEntity agenda = agendaService.findAgendaById(StubBuilder.agendaEntity().id());
         Assertions.assertEquals("Aumento de salário", agenda.title());
         Assertions.assertEquals("Aumento de 5% do salário para os desenvolvedores de software com mais de 5 anos", agenda.description());
+        BDDMockito.times(1);
+        BDDMockito.verify(agendaRepository).findById(StubBuilder.agendaEntity().id());
     }
 
     @Test
