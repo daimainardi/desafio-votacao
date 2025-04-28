@@ -2,6 +2,7 @@ package com.daimainardi.desafiovotacao.service;
 
 import com.daimainardi.desafiovotacao.entity.SessionEntity;
 import com.daimainardi.desafiovotacao.entity.VoteEntity;
+import com.daimainardi.desafiovotacao.exception.AgendaNotFoundException;
 import com.daimainardi.desafiovotacao.exception.SessionNotActiveException;
 import com.daimainardi.desafiovotacao.exception.SessionNotFoundException;
 import com.daimainardi.desafiovotacao.mapper.SessionMapper;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +33,7 @@ public class SessionService {
     private final AgendaService agendaService;
 
     public SessionResponseDTO createSession(SessionRequestDTO sessionRequestDTO) {
+        existsAgendaById(sessionRequestDTO);
         SessionRequestDTO session = validateSessionDurationTime(sessionRequestDTO);
         SessionEntity sessionEntity = sessionRepository.save(SessionMapper.mapRequestToEntity(session));
         return new SessionResponseDTO(sessionEntity.id(), getTitleByAgendaId(sessionEntity.agendaId()), session.durationMinutes());
@@ -81,10 +84,16 @@ public class SessionService {
     }
 
     private SessionRequestDTO validateSessionDurationTime(SessionRequestDTO session){
-        if (session.durationMinutes() == null || session.durationMinutes() == 0) {
+        if (Objects.isNull(session.durationMinutes()) || session.durationMinutes() == 0) {
             session = session.toBuilder().durationMinutes(1).build();
         }
         return session;
+    }
+    private void existsAgendaById(SessionRequestDTO session) {
+        boolean agendaExists = agendaService.existsAgendaById(session.agendaId());
+        if(!agendaExists){
+            throw new AgendaNotFoundException("Agenda not found", HttpStatus.NOT_FOUND);
+        }
     }
 }
 

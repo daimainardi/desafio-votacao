@@ -8,6 +8,7 @@ import com.daimainardi.desafiovotacao.mapper.SessionMapper;
 import com.daimainardi.desafiovotacao.mapper.VoteMapper;
 import com.daimainardi.desafiovotacao.repository.SessionRepository;
 import com.daimainardi.desafiovotacao.repository.VoteRepository;
+import com.daimainardi.desafiovotacao.request.SessionRequestDTO;
 import com.daimainardi.desafiovotacao.response.SessionResponseDTO;
 import com.daimainardi.desafiovotacao.response.VoteResultDTO;
 import com.daimainardi.desafiovotacao.stub.StubBuilder;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
@@ -27,6 +29,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SessionServiceTest {
@@ -44,12 +47,27 @@ class SessionServiceTest {
     void shouldRegisterSession() {
         BDDMockito.given(sessionRepository.save(any(SessionEntity.class)))
                 .willReturn(SessionMapper.mapRequestToEntity(StubBuilder.sessionRequestDTO()));
-        BDDMockito.given(agendaService.findAgendaById(anyString())).willReturn(StubBuilder.agendaEntity());
+        when(agendaService.existsAgendaById(StubBuilder.agendaEntity().id())).thenReturn(true);
+        when(agendaService.findAgendaById(anyString())).thenReturn(StubBuilder.agendaEntity());
         SessionResponseDTO session = sessionService.createSession(StubBuilder.sessionRequestDTO());
         Assertions.assertEquals("Aumento de salário", session.agendaTitle());
         Assertions.assertEquals(30, session.durationMinutes());
-        BDDMockito.times(1);
-        BDDMockito.verify(sessionRepository).save(any(SessionEntity.class));
+        BDDMockito.verify(sessionRepository, Mockito.times(1)).save(any(SessionEntity.class));
+    }
+
+    @Test
+    @DisplayName("Deve cadastrar uma sessão com duração de um minuto quando o tempo de duração não for passado pelo request")
+    void shouldRegisterSessionLastingOneMinuteWhenItIsNotPassedByTheRequest() {
+        SessionRequestDTO sessionRequestDTO = new SessionRequestDTO("123456", 0);
+        SessionEntity sessionEntity = new SessionEntity("78910", "123456", LocalDateTime.now(),
+                LocalDateTime.now().plusMinutes(sessionRequestDTO.durationMinutes()));
+        BDDMockito.given(sessionRepository.save(any(SessionEntity.class))).willReturn(sessionEntity);
+        when(agendaService.existsAgendaById(StubBuilder.agendaEntity().id())).thenReturn(true);
+        when(agendaService.findAgendaById(anyString())).thenReturn(StubBuilder.agendaEntity());
+        SessionResponseDTO session = sessionService.createSession(sessionRequestDTO);
+        Assertions.assertEquals("Aumento de salário", session.agendaTitle());
+        Assertions.assertEquals(1, session.durationMinutes());
+        BDDMockito.verify(sessionRepository, Mockito.times(1)).save(any(SessionEntity.class));
     }
 
     @Test
@@ -60,15 +78,13 @@ class SessionServiceTest {
         BDDMockito.given(sessionRepository.findById(anyString())).willReturn(Optional.of(StubBuilder.sessionEntity()));
         Assertions.assertDoesNotThrow(() -> sessionService.createVote(StubBuilder.voteRequestDTO()));
         BDDMockito.verify(voteRepository, BDDMockito.times(1)).save(any(VoteEntity.class));
-
     }
 
     @Test
     @DisplayName("Deve encontar uma sessão ativa pelo id")
     void shouldFindActiveSessionById() {
         BDDMockito.given(sessionRepository.findById(StubBuilder.sessionEntity().id())).willReturn(Optional.of(StubBuilder.sessionEntity()));
-        SessionEntity session = sessionService.findActiveSessionById(StubBuilder.sessionEntity().id());
-        Assertions.assertDoesNotThrow(() -> session);
+        SessionEntity session= Assertions.assertDoesNotThrow(() -> sessionService.findActiveSessionById(StubBuilder.sessionEntity().id()));
         Assertions.assertEquals("123456", session.agendaId());
         BDDMockito.verify(sessionRepository, BDDMockito.times(1)).findById(StubBuilder.sessionEntity().id());
     }
@@ -76,21 +92,28 @@ class SessionServiceTest {
     @Test
     @DisplayName("Não deve encontrar sessão pelo id, Id inexistente, SessionNotFoundException")
     void shouldNotFindSessionByIdNotFound() {
-        BDDMockito.given(sessionRepository.findById(StubBuilder.sessionEntity().id())).willThrow(new SessionNotFoundException("Session not found", HttpStatus.NOT_FOUND));
-         SessionNotFoundException exception= Assertions.assertThrows(SessionNotFoundException.class,
-                () -> sessionService.findActiveSessionById(StubBuilder.sessionEntity().id()));
+        String sessionId = StubBuilder.sessionEntity().id();
+        BDDMockito.given(sessionRepository.findById(sessionId))
+                .willThrow(new SessionNotFoundException("Session not found", HttpStatus.NOT_FOUND));
+        SessionNotFoundException exception = Assertions.assertThrows(SessionNotFoundException.class,
+                () -> sessionService.findActiveSessionById(sessionId));
+        Assertions.assertEquals(SessionNotFoundException.class, exception.getClass());
         Assertions.assertEquals("Session not found", exception.getMessage());
         Assertions.assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        BDDMockito.verify(sessionRepository, BDDMockito.times(1)).findById(sessionId);
     }
 
     @Test
     @DisplayName("Não deve encontrar sessão pelo id, sessão inativa, SessionNotActiveException")
     void shouldNotFindSessionActiveById() {
-        BDDMockito.given(sessionRepository.findById(StubBuilder.sessionEntity().id())).willThrow(new SessionNotActiveException("Session not active", HttpStatus.BAD_REQUEST));
-        SessionNotActiveException exception= Assertions.assertThrows(SessionNotActiveException.class,
-                () -> sessionService.findActiveSessionById(StubBuilder.sessionEntity().id()));
+        String sessionId = StubBuilder.sessionEntity().id();
+        BDDMockito.given(sessionRepository.findById(sessionId)).willThrow(new SessionNotActiveException("Session not active", HttpStatus.BAD_REQUEST));
+        SessionNotActiveException exception = Assertions.assertThrows(SessionNotActiveException.class,
+                () -> sessionService.findActiveSessionById(sessionId));
+        Assertions.assertEquals(SessionNotActiveException.class, exception.getClass());
         Assertions.assertEquals("Session not active", exception.getMessage());
         Assertions.assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        BDDMockito.verify(sessionRepository, BDDMockito.times(1)).findById(sessionId);
     }
 
     @Test

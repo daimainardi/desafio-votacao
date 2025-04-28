@@ -30,6 +30,10 @@ public class AgendaService {
                 new AgendaNotFoundException("Agenda not found", HttpStatus.NOT_FOUND));
     }
 
+    public Boolean existsAgendaById(String id) {
+        return agendaRepository.existsById(id);
+    }
+
     public List<AgendaResponseDTO> findAll() {
         return AgendaMapper.mapEntityListToResponseList(agendaRepository.findAll());
     }

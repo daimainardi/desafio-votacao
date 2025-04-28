@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -37,15 +38,15 @@ class AgendaServiceTest {
         AgendaResponseDTO agenda = agendaService.createAgenda(StubBuilder.agendaRequestDTO());
         Assertions.assertEquals("Aumento de salário", agenda.title());
         Assertions.assertEquals("Aumento de 5% do salário para os desenvolvedores de software com mais de 5 anos", agenda.description());
-        BDDMockito.times(1);
-        BDDMockito.verify(agendaRepository).save(any(AgendaEntity.class));
+        BDDMockito.verify(agendaRepository,Mockito.times(1)).save(any(AgendaEntity.class));
     }
 
     @Test
     @DisplayName("Deve lançar excessão DuplicateKeyException quando tentar cadastrar nome de pauta ja existente")
     void shouldThrowExceptionWhenTryingToRegisterAnExistingAgendaName() {
+        var agendaRequestDTO = StubBuilder.agendaRequestDTO();
         BDDMockito.given(agendaRepository.save(any(AgendaEntity.class))).willThrow(DuplicateKeyException.class);
-        Assertions.assertThrows(DuplicateKeyException.class, () -> agendaService.createAgenda(StubBuilder.agendaRequestDTO()));
+        Assertions.assertThrows(DuplicateKeyException.class, () -> agendaService.createAgenda(agendaRequestDTO));
     }
 
     @Test
@@ -53,21 +54,21 @@ class AgendaServiceTest {
     void shouldFindAgendaById() {
         BDDMockito.given(agendaRepository.findById(StubBuilder.agendaEntity().id()))
                 .willReturn(Optional.of(StubBuilder.agendaEntity()));
-        Assertions.assertDoesNotThrow(() -> agendaService.findAgendaById(StubBuilder.agendaEntity().id()));
         AgendaEntity agenda = agendaService.findAgendaById(StubBuilder.agendaEntity().id());
         Assertions.assertEquals("Aumento de salário", agenda.title());
         Assertions.assertEquals("Aumento de 5% do salário para os desenvolvedores de software com mais de 5 anos", agenda.description());
-        BDDMockito.times(1);
-        BDDMockito.verify(agendaRepository).findById(StubBuilder.agendaEntity().id());
+        BDDMockito.verify(agendaRepository, Mockito.times(1)).findById(agenda.id());
     }
 
     @Test
     @DisplayName("Não deve encontrar agenda, Id inexistente, AgendaNotFoundException")
     void shouldNotFindAgendaByIdNotFound() {
-        BDDMockito.given(agendaRepository.findById(StubBuilder.agendaEntity().id()))
+        String agendaId = StubBuilder.agendaEntity().id();
+        BDDMockito.given(agendaRepository.findById(agendaId))
                 .willThrow(new AgendaNotFoundException("Agenda not found", HttpStatus.NOT_FOUND));
         AgendaNotFoundException exception = Assertions.assertThrows(AgendaNotFoundException.class,
-                () -> agendaService.findAgendaById(StubBuilder.agendaEntity().id()));
+                () -> agendaService.findAgendaById(agendaId));
+        Assertions.assertEquals(AgendaNotFoundException.class, exception.getClass());
         Assertions.assertEquals("Agenda not found", exception.getMessage());
         Assertions.assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
     }
