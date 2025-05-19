@@ -27,6 +27,7 @@ services:
       - "9000:9000"
     networks:
       - ${NETWORK_TYPE:-ipv4}
+
   db:
     image: postgres:17
     healthcheck:
@@ -45,6 +46,28 @@ services:
       - postgresql_data:/var/lib/postgresql/data
     networks:
       - ${NETWORK_TYPE:-ipv4}
+
+  zookeeper:
+    image: bitnami/zookeeper:3.8
+    container_name: zookeeper
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: bitnami/kafka:3.6
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
 
 volumes:
   sonarqube_data:

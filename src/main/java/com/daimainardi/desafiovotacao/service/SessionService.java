@@ -1,7 +1,9 @@
 package com.daimainardi.desafiovotacao.service;
 
+import com.daimainardi.desafiovotacao.event.MessageProducer;
 import com.daimainardi.desafiovotacao.entity.SessionEntity;
 import com.daimainardi.desafiovotacao.entity.VoteEntity;
+import com.daimainardi.desafiovotacao.enumeration.SessionStatus;
 import com.daimainardi.desafiovotacao.exception.AgendaNotFoundException;
 import com.daimainardi.desafiovotacao.exception.SessionNotActiveException;
 import com.daimainardi.desafiovotacao.exception.SessionNotFoundException;
@@ -31,12 +33,19 @@ public class SessionService {
     private final SessionRepository sessionRepository;
     private final VoteRepository voteRepository;
     private final AgendaService agendaService;
+    private final MessageProducer messageProducer;
 
     public SessionResponseDTO createSession(SessionRequestDTO sessionRequestDTO) {
         existsAgendaById(sessionRequestDTO);
         SessionRequestDTO session = validateSessionDurationTime(sessionRequestDTO);
         SessionEntity sessionEntity = sessionRepository.save(SessionMapper.mapRequestToEntity(session));
-        return new SessionResponseDTO(sessionEntity.id(), getTitleByAgendaId(sessionEntity.agendaId()), session.durationMinutes());
+        SessionResponseDTO responseDTO = new SessionResponseDTO(
+                sessionEntity.id(),
+                getTitleByAgendaId(sessionEntity.agendaId()),
+                session.durationMinutes());
+
+        messageProducer.sendSessionEvent(responseDTO, SessionStatus.CREATED);
+        return responseDTO;
     }
 
     public SessionEntity findActiveSessionById(String id) {

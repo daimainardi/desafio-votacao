@@ -1,7 +1,9 @@
 package com.daimainardi.desafiovotacao.service;
 
+import com.daimainardi.desafiovotacao.event.MessageProducer;
 import com.daimainardi.desafiovotacao.entity.SessionEntity;
 import com.daimainardi.desafiovotacao.entity.VoteEntity;
+import com.daimainardi.desafiovotacao.enumeration.SessionStatus;
 import com.daimainardi.desafiovotacao.exception.SessionNotActiveException;
 import com.daimainardi.desafiovotacao.exception.SessionNotFoundException;
 import com.daimainardi.desafiovotacao.mapper.SessionMapper;
@@ -41,6 +43,8 @@ class SessionServiceTest {
     private VoteRepository voteRepository;
     @Mock
     private AgendaService agendaService;
+    @Mock
+    private MessageProducer messageProducer;
 
     @Test
     @DisplayName("Deve cadastrar nova sessão, não deve dar exceção")
@@ -49,6 +53,7 @@ class SessionServiceTest {
                 .willReturn(SessionMapper.mapRequestToEntity(StubBuilder.sessionRequestDTO()));
         when(agendaService.existsAgendaById(StubBuilder.agendaEntity().id())).thenReturn(true);
         when(agendaService.findAgendaById(anyString())).thenReturn(StubBuilder.agendaEntity());
+        BDDMockito.doNothing().when(messageProducer).sendSessionEvent(any(SessionResponseDTO.class), any(SessionStatus.class));
         SessionResponseDTO session = sessionService.createSession(StubBuilder.sessionRequestDTO());
         Assertions.assertEquals("Aumento de salário", session.agendaTitle());
         Assertions.assertEquals(30, session.durationMinutes());
@@ -64,6 +69,7 @@ class SessionServiceTest {
         BDDMockito.given(sessionRepository.save(any(SessionEntity.class))).willReturn(sessionEntity);
         when(agendaService.existsAgendaById(StubBuilder.agendaEntity().id())).thenReturn(true);
         when(agendaService.findAgendaById(anyString())).thenReturn(StubBuilder.agendaEntity());
+        BDDMockito.doNothing().when(messageProducer).sendSessionEvent(any(SessionResponseDTO.class), any(SessionStatus.class));
         SessionResponseDTO session = sessionService.createSession(sessionRequestDTO);
         Assertions.assertEquals("Aumento de salário", session.agendaTitle());
         Assertions.assertEquals(1, session.durationMinutes());
@@ -84,7 +90,7 @@ class SessionServiceTest {
     @DisplayName("Deve encontar uma sessão ativa pelo id")
     void shouldFindActiveSessionById() {
         BDDMockito.given(sessionRepository.findById(StubBuilder.sessionEntity().id())).willReturn(Optional.of(StubBuilder.sessionEntity()));
-        SessionEntity session= Assertions.assertDoesNotThrow(() -> sessionService.findActiveSessionById(StubBuilder.sessionEntity().id()));
+        SessionEntity session = Assertions.assertDoesNotThrow(() -> sessionService.findActiveSessionById(StubBuilder.sessionEntity().id()));
         Assertions.assertEquals("123456", session.agendaId());
         BDDMockito.verify(sessionRepository, BDDMockito.times(1)).findById(StubBuilder.sessionEntity().id());
     }

@@ -29,6 +29,7 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.kafka:spring-kafka'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	implementation 'jakarta.validation:jakarta.validation-api:3.1.0-M1'
 	implementation 'org.hibernate.validator:hibernate-validator:8.0.1.Final'
@@ -60,7 +61,7 @@ sonar {
 	properties {
 		property "sonar.projectKey", "desafio-votacao"
 		property "sonar.host.url", "http://localhost:9000"
-		property "sonar.token", "sqp_3a733d77ea0347cea3a0e36cc290a48a565cc186"
+		property "sonar.token", "sqp_4d6d4fc48424f0c32d5ae0ae01ef4698ec6cf193"
 		property "sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("reports/jacoco/test/xml/report.xml").get().asFile.absolutePath
 	}
 }
